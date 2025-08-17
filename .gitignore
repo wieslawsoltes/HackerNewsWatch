@@ -1,0 +1,16 @@
+# Xcode
+DerivedData/
+*.xcworkspace/
+*.xcodeproj/project.xcworkspace/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/xcshareddata/swiftpm/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+/.derived
+/.vscode
+/HackerNewsWatch.xcodeproj

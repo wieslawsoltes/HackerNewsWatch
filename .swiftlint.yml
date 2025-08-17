@@ -1,0 +1,5 @@
+disabled_rules:
+  - trailing_whitespace
+  - line_length
+  - identifier_name
+  - nesting

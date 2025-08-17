@@ -1,0 +1,35 @@
+name: HackerNewsWatch
+options:
+  minimumXcodeGenVersion: 2.38.0
+  developmentLanguage: en
+  groupSortPosition: top
+  createIntermediateGroups: true
+
+targets:
+  HackerNewsWatch Watch App:
+    type: application
+    platform: watchOS
+    deploymentTarget: "10.0"
+    sources:
+      - path: Sources/WatchApp
+        excludes:
+          # Exclude legacy QR view that caused build issues on watchOS
+          - Views/QRCodeView.swift
+          # Exclude redundant web session helper (now inlined in ArticleReaderView)
+          - Views/WatchWebBrowser.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.HackerNewsWatch.watchapp
+        SWIFT_VERSION: 5.9
+        INFOPLIST_FILE: Sources/WatchApp/Info.plist
+        MARKETING_VERSION: 1.0
+        CURRENT_PROJECT_VERSION: 1
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+    scheme:
+      testTargets: []
+
+packages: {}
+
+attributes:
+  ORGANIZATIONNAME: Example
