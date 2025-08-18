@@ -11,6 +11,12 @@ struct HackerNewsWatchApp: App {
                         Text("Feed")
                     }
                 
+                FeedSelectorView()
+                    .tabItem {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                        Text("Feeds")
+                    }
+                
                 SavedArticlesView()
                     .tabItem {
                         Image(systemName: "bookmark.fill")

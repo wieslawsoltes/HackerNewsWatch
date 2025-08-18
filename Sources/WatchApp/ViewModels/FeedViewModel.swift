@@ -2,10 +2,13 @@ import Foundation
 
 @MainActor
 final class FeedViewModel: ObservableObject {
+    static let shared = FeedViewModel()
+    
     @Published var stories: [HNStory] = []
     @Published var isLoading = false
     @Published var isLoadingMore = false
     @Published var error: String?
+    @Published var feedType: FeedType = .top
     
     private let service = HNService()
     private var allStoryIDs: [Int] = []
@@ -21,11 +24,17 @@ final class FeedViewModel: ObservableObject {
         defer { isLoading = false }
         
         do {
-            allStoryIDs = try await service.topStoryIDs()
+            allStoryIDs = try await service.storyIDs(for: feedType)
             await loadNextBatch()
         } catch {
             self.error = error.localizedDescription
         }
+    }
+    
+    func changeFeed(to newFeedType: FeedType) async {
+        guard newFeedType != feedType else { return }
+        feedType = newFeedType
+        await load()
     }
     
     func loadMore() async {

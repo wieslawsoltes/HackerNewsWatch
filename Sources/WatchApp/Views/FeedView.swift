@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct FeedView: View {
-    @StateObject private var vm = FeedViewModel()
+    @StateObject private var vm = FeedViewModel.shared
     @StateObject private var savedArticlesManager = SavedArticlesManager.shared
     
     var body: some View {
@@ -62,7 +62,7 @@ struct FeedView: View {
                     Task { await vm.load() }
                 }
             }
-            .navigationTitle("Hacker News")
+            .navigationTitle(vm.feedType.displayName)
         }
     }
 }
