@@ -35,6 +35,7 @@ struct CommentsView: View {
                 Text("Error: \(error)")
             }
         }
+        .scrollBounceBehavior(.always)
         .refreshable {
             await vm.load(for: story)
         }
