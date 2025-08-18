@@ -12,11 +12,6 @@ targets:
     deploymentTarget: "10.0"
     sources:
       - path: Sources/WatchApp
-        excludes:
-          # Exclude legacy QR view that caused build issues on watchOS
-          - Views/QRCodeView.swift
-          # Exclude redundant web session helper (now inlined in ArticleReaderView)
-          - Views/WatchWebBrowser.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.HackerNewsWatch.watchapp
