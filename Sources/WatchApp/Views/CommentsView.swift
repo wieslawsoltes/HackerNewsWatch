@@ -81,7 +81,7 @@ struct CommentNodeView: View {
                             .buttonStyle(PlainButtonStyle())
                         }
                     }
-                    Text(cleanHTML(node.comment.text ?? "[no text]"))
+                    CommentTextView(htmlComponents: cleanHTML(node.comment.text ?? "[no text]"))
                 }
             }
             
@@ -111,10 +111,66 @@ struct CommentNodeView: View {
     private func toggleExpansion() {
         isExpanded.toggle()
     }
+}
+
+struct HTMLComponent {
+    let text: String
+    let tags: Set<String>
+    let url: String?
     
-    private func cleanHTML(_ html: String) -> AttributedString {
-        var attributedString = AttributedString()
+    init(text: String, tags: Set<String>, url: String? = nil) {
+        self.text = text
+        self.tags = tags
+        self.url = url
+    }
+}
+
+struct CommentTextView: View {
+    let htmlComponents: [HTMLComponent]
+    @StateObject private var browser = WebAuthBrowser()
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(Array(htmlComponents.enumerated()), id: \.offset) { index, component in
+                if component.tags.contains("a"), let urlString = component.url, let url = URL(string: urlString) {
+                    Button(action: {
+                        browser.open(url)
+                    }) {
+                        Text(component.text)
+                            .foregroundColor(.orange)
+                            .underline()
+                            .font(.footnote)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                } else {
+                    Text(formatComponent(component))
+                        .font(.footnote)
+                }
+            }
+        }
+    }
+    
+    private func formatComponent(_ component: HTMLComponent) -> AttributedString {
+        var attributedString = AttributedString(component.text)
         
+        // Apply formatting based on tags
+        if component.tags.contains("i") || component.tags.contains("em") {
+            attributedString.font = .footnote.italic()
+        }
+        if component.tags.contains("b") || component.tags.contains("strong") {
+            attributedString.font = .footnote.bold()
+        }
+        if component.tags.contains("code") {
+            attributedString.font = .footnote.monospaced()
+            attributedString.backgroundColor = Color.gray.opacity(0.2)
+        }
+        
+        return attributedString
+    }
+}
+
+extension CommentNodeView {
+    private func cleanHTML(_ html: String) -> [HTMLComponent] {
         // First, handle HTML entities
         var text = html
         let htmlEntities: [(String, String)] = [
@@ -134,54 +190,22 @@ struct CommentNodeView: View {
         }
         
         // Parse HTML tags and apply formatting
-        let components = parseHTMLComponents(text)
-        
-        for component in components {
-            var componentString = AttributedString(component.text)
-            
-            // Apply formatting based on tags
-            if component.tags.contains("i") || component.tags.contains("em") {
-                componentString.font = .footnote.italic()
-            }
-            if component.tags.contains("b") || component.tags.contains("strong") {
-                componentString.font = .footnote.bold()
-            }
-            if component.tags.contains("code") {
-                componentString.font = .footnote.monospaced()
-                componentString.backgroundColor = Color.gray.opacity(0.2)
-            }
-            if component.tags.contains("a") {
-                componentString.foregroundColor = .orange
-                componentString.underlineStyle = .single
-            }
-            
-            attributedString.append(componentString)
-            
-            // Add line breaks for block elements
-            if component.tags.contains("p") || component.tags.contains("br") {
-                attributedString.append(AttributedString("\n\n"))
-            }
-        }
-        
-        return attributedString
-    }
-    
-    private struct HTMLComponent {
-        let text: String
-        let tags: Set<String>
+        return parseHTMLComponents(text)
     }
     
     private func parseHTMLComponents(_ html: String) -> [HTMLComponent] {
         var components: [HTMLComponent] = []
         var currentText = ""
         var tagStack: [String] = []
+        var urlStack: [String?] = []
         var i = html.startIndex
         
         while i < html.endIndex {
             if html[i] == "<" {
                 // Save current text if any
                 if !currentText.isEmpty {
-                    components.append(HTMLComponent(text: currentText, tags: Set(tagStack)))
+                    let currentURL = urlStack.last ?? nil
+                    components.append(HTMLComponent(text: currentText, tags: Set(tagStack), url: currentURL))
                     currentText = ""
                 }
                 
@@ -200,18 +224,31 @@ struct CommentNodeView: View {
                     // Remove from stack
                     if let index = tagStack.lastIndex(of: tagName) {
                         tagStack.remove(at: index)
+                        if tagName == "a" && !urlStack.isEmpty {
+                            urlStack.removeLast()
+                        }
                     }
                 } else {
                     // Add to stack (ignore self-closing tags like <br/>)
                     if !tagContent.hasSuffix("/") && !["br", "hr", "img"].contains(tagName) {
                         tagStack.append(tagName)
+                        
+                        // Extract URL from <a> tags
+                        if tagName == "a" {
+                            let extractedURL = extractHrefFromTag(tagContent)
+                            urlStack.append(extractedURL)
+                        } else {
+                            urlStack.append(urlStack.last ?? nil)
+                        }
                     }
                     
                     // Handle special cases
                     if tagName == "br" {
-                        components.append(HTMLComponent(text: "\n", tags: Set(tagStack)))
+                        let currentURL = urlStack.last ?? nil
+                        components.append(HTMLComponent(text: "\n", tags: Set(tagStack), url: currentURL))
                     } else if tagName == "p" && !components.isEmpty {
-                        components.append(HTMLComponent(text: "\n\n", tags: Set(tagStack)))
+                        let currentURL = urlStack.last ?? nil
+                        components.append(HTMLComponent(text: "\n\n", tags: Set(tagStack), url: currentURL))
                     }
                 }
                 
@@ -224,9 +261,29 @@ struct CommentNodeView: View {
         
         // Add remaining text
         if !currentText.isEmpty {
-            components.append(HTMLComponent(text: currentText, tags: Set(tagStack)))
+            let currentURL = urlStack.last ?? nil
+            components.append(HTMLComponent(text: currentText, tags: Set(tagStack), url: currentURL))
         }
         
         return components
+    }
+    
+    private func extractHrefFromTag(_ tagContent: String) -> String? {
+        // Look for href="..." or href='...'
+        let patterns = [
+            #"href\s*=\s*"([^"]*)"#,
+            #"href\s*=\s*'([^']*)'"#,
+            #"href\s*=\s*([^\s>]+)"#
+        ]
+        
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+               let match = regex.firstMatch(in: tagContent, options: [], range: NSRange(location: 0, length: tagContent.count)),
+               let range = Range(match.range(at: 1), in: tagContent) {
+                return String(tagContent[range])
+            }
+        }
+        
+        return nil
     }
 }
