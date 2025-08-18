@@ -20,6 +20,9 @@ struct CommentsView: View {
                 Text("Error: \(error)")
             }
         }
+        .refreshable {
+            await vm.load(for: story)
+        }
         .navigationTitle("Comments")
         .navigationDestination(for: URL.self) { url in
             ArticleReaderView(url: url)

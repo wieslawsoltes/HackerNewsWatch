@@ -20,6 +20,9 @@ struct FeedView: View {
                         }
                     }
                     .listStyle(.carousel)
+                    .refreshable {
+                        await vm.load()
+                    }
                 }
             }
             .navigationDestination(for: HNStory.self) { story in
