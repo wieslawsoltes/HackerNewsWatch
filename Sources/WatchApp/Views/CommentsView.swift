@@ -6,11 +6,56 @@ struct CommentsView: View {
     
     var body: some View {
         List {
-            if let url = story.url, let linkURL = URL(string: url) {
-                NavigationLink(value: linkURL) {
-                    Label("Open Article", systemImage: "doc.text.magnifyingglass")
-                        .foregroundStyle(.orange)
+            // Story details section
+            Section {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(story.title)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(nil)
+                    
+                    HStack(spacing: 12) {
+                        if let by = story.by {
+                            NavigationLink(value: by) {
+                                Image(systemName: "person.circle")
+                                    .foregroundStyle(.orange)
+                                    .font(.caption)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        
+                        if let score = story.score {
+                            HStack(spacing: 2) {
+                                Image(systemName: "arrowtriangle.up.fill")
+                                    .foregroundStyle(.orange)
+                                    .font(.caption2)
+                                Text("\(score)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        
+                        if let time = story.time {
+                            HStack(spacing: 2) {
+                                Image(systemName: "clock")
+                                    .foregroundStyle(.secondary)
+                                    .font(.caption2)
+                                Text(formatTimeAgo(time))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    
+                    if let url = story.url, let linkURL = URL(string: url) {
+                        NavigationLink(value: linkURL) {
+                            Label("Open Article", systemImage: "doc.text.magnifyingglass")
+                                .foregroundStyle(.orange)
+                                .font(.subheadline)
+                        }
+                    }
                 }
+                .padding(.vertical, 4)
             }
             if let root = vm.root {
                 CommentTree(node: root, viewModel: vm)
@@ -43,6 +88,9 @@ struct CommentsView: View {
         .navigationDestination(for: URL.self) { url in
             ArticleReaderView(url: url)
         }
+        .navigationDestination(for: String.self) { username in
+            UserDetailsView(username: username)
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
@@ -59,6 +107,26 @@ struct CommentsView: View {
             Task {
                 await vm.load(for: story)
             }
+        }
+    }
+    
+    private func formatTimeAgo(_ timestamp: Int) -> String {
+        let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
+        let now = Date()
+        let interval = now.timeIntervalSince(date)
+        
+        let minutes = Int(interval / 60)
+        let hours = Int(interval / 3600)
+        let days = Int(interval / 86400)
+        
+        if days > 0 {
+            return "\(days)d ago"
+        } else if hours > 0 {
+            return "\(hours)h ago"
+        } else if minutes > 0 {
+            return "\(minutes)m ago"
+        } else {
+            return "now"
         }
     }
 }
@@ -92,7 +160,12 @@ struct CommentNodeView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack {
                         if let by = node.comment.by {
-                            Text(by).font(.caption2).foregroundStyle(.secondary)
+                            NavigationLink(value: by) {
+                                Image(systemName: "person.circle")
+                                    .foregroundStyle(.orange)
+                                    .font(.caption2)
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
                         Spacer()
                         if hasChildren {

@@ -56,4 +56,13 @@ actor HNService {
         }
         return try JSONDecoder().decode(T.self, from: data)
     }
+    
+    func user(_ username: String) async throws -> HNUser {
+        let url = base.appendingPathComponent("user/\(username).json")
+        let (data, response) = try await session.data(from: url)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+        return try JSONDecoder().decode(HNUser.self, from: data)
+    }
 }

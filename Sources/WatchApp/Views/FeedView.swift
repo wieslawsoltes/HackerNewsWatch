@@ -58,6 +58,9 @@ struct FeedView: View {
             .navigationDestination(for: HNStory.self) { story in
                 CommentsView(story: story)
             }
+            .navigationDestination(for: String.self) { username in
+                UserDetailsView(username: username)
+            }
             .onAppear {
                 if vm.stories.isEmpty {
                     Task { await vm.load() }
@@ -91,6 +94,15 @@ struct StoryRow: View {
                     .font(.headline)
                     .foregroundStyle(.orange)
                 HStack(spacing: 8) {
+                    if let by = story.by {
+                        NavigationLink(value: by) {
+                            Image(systemName: "person.circle")
+                                .foregroundStyle(.orange)
+                                .font(.caption)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    
                     if let score = story.score {
                         Image(systemName: "arrowtriangle.up.fill")
                             .foregroundStyle(.orange)
