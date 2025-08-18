@@ -2,7 +2,7 @@ import SwiftUI
 
 struct CommentsView: View {
     let story: HNStory
-    @StateObject private var vm = CommentsViewModel()
+    @StateObject private var vm = CommentsViewModel.shared
     
     var body: some View {
         List {
@@ -37,7 +37,7 @@ struct CommentsView: View {
         }
         .scrollBounceBehavior(.always)
         .refreshable {
-            await vm.load(for: story)
+            await vm.load(for: story, forceReload: true)
         }
         .navigationTitle("Comments")
         .navigationDestination(for: URL.self) { url in

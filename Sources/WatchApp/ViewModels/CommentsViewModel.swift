@@ -2,6 +2,8 @@ import Foundation
 
 @MainActor
 final class CommentsViewModel: ObservableObject {
+    static let shared = CommentsViewModel()
+    
     @Published var root: CommentNode?
     @Published var isLoading = false
     @Published var error: String?
@@ -10,6 +12,8 @@ final class CommentsViewModel: ObservableObject {
     private let service = HNService()
     private var totalComments = 0
     private var loadedComments = 0
+    private var commentsCache: [Int: CommentNode] = [:]
+    private var currentStoryId: Int?
     
     struct CommentNode: Identifiable {
         let id: Int
@@ -25,11 +29,18 @@ final class CommentsViewModel: ObservableObject {
         }
     }
     
-    func load(for story: HNStory) async {
+    func load(for story: HNStory, forceReload: Bool = false) async {
+        // Check if we already have this story loaded and it's not a force reload
+        if !forceReload, currentStoryId == story.id, let cachedRoot = commentsCache[story.id] {
+            self.root = cachedRoot
+            return
+        }
+        
         isLoading = true
         error = nil
         loadingProgress = 0.0
         loadedComments = 0
+        currentStoryId = story.id
         
         defer { isLoading = false }
         
@@ -49,12 +60,16 @@ final class CommentsViewModel: ObservableObject {
             let rootChildren = await loadNodesProgressively(ids: kids)
             
             // Update root with loaded children
-            self.root = CommentNode(
+            let updatedRoot = CommentNode(
                 id: story.id,
                 comment: self.root!.comment,
                 children: rootChildren,
                 isChildrenLoaded: true
             )
+            self.root = updatedRoot
+            
+            // Cache the loaded comments
+            commentsCache[story.id] = updatedRoot
             
             loadingProgress = 1.0
         } catch {
@@ -63,10 +78,13 @@ final class CommentsViewModel: ObservableObject {
     }
     
     func loadChildren(for nodeId: Int) async {
-        guard let root = root else { return }
+        guard let root = root, let storyId = currentStoryId else { return }
         
         let updatedRoot = await loadChildrenForNode(root, targetId: nodeId)
         self.root = updatedRoot
+        
+        // Update cache with the new root containing loaded children
+        commentsCache[storyId] = updatedRoot
     }
     
     private func loadChildrenForNode(_ node: CommentNode, targetId: Int) async -> CommentNode {
@@ -135,5 +153,13 @@ final class CommentsViewModel: ObservableObject {
             }
         }
         return nodes
+    }
+    
+    func clearCache() {
+        commentsCache.removeAll()
+    }
+    
+    func clearCacheForStory(_ storyId: Int) {
+        commentsCache.removeValue(forKey: storyId)
     }
 }
