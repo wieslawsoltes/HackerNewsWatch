@@ -161,9 +161,13 @@ struct CommentNodeView: View {
                     HStack {
                         if let by = node.comment.by {
                             NavigationLink(value: by) {
-                                Image(systemName: "person.circle")
-                                    .foregroundStyle(.orange)
-                                    .font(.caption2)
+                                HStack(spacing: 2) {
+                                    Image(systemName: "person.circle")
+                                        .foregroundStyle(.orange)
+                                    Text(by)
+                                        .font(.caption2)
+                                        .foregroundStyle(.orange)
+                                }
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
