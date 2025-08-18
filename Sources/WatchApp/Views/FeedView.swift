@@ -5,52 +5,62 @@ struct FeedView: View {
     
     var body: some View {
         NavigationStack {
-            Group {
+            List {
                 if vm.isLoading && vm.stories.isEmpty {
-                    ProgressView("Loading…")
+                    HStack {
+                        Spacer()
+                        ProgressView("Loading…")
+                        Spacer()
+                    }
+                    .listRowBackground(Color.clear)
                 } else if let error = vm.error {
                     VStack(spacing: 8) {
                         Text("Error: \(error)")
                         Button("Retry") { Task { await vm.load() } }
                     }
+                    .listRowBackground(Color.clear)
                 } else {
-                    List {
-                        ForEach(vm.stories) { story in
-                            NavigationLink(value: story) {
-                                StoryRow(story: story)
-                            }
-                        }
-                        
-                        if vm.hasMoreStories {
-                            if vm.isLoadingMore {
-                                HStack {
-                                    Spacer()
-                                    ProgressView()
-                                        .scaleEffect(0.8)
-                                    Spacer()
-                                }
-                                .padding(.vertical, 8)
-                            } else {
-                                Button("Load More") {
-                                    Task { await vm.loadMore() }
-                                }
-                                .foregroundStyle(.orange)
-                                .onAppear {
-                                    Task { await vm.loadMore() }
-                                }
-                            }
+                    ForEach(vm.stories) { story in
+                        NavigationLink(value: story) {
+                            StoryRow(story: story)
                         }
                     }
-                    .listStyle(.carousel)
-                    .refreshable {
-                        await vm.load()
+                    
+                    if vm.hasMoreStories {
+                        if vm.isLoadingMore {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                Spacer()
+                            }
+                            .padding(.vertical, 8)
+                            .listRowBackground(Color.clear)
+                        } else {
+                            Button("Load More") {
+                                Task { await vm.loadMore() }
+                            }
+                            .foregroundStyle(.orange)
+                            .listRowBackground(Color.clear)
+                            .onAppear {
+                                Task { await vm.loadMore() }
+                            }
+                        }
                     }
                 }
+            }
+            .listStyle(.plain)
+            .refreshable {
+                await vm.load()
             }
             .navigationDestination(for: HNStory.self) { story in
                 CommentsView(story: story)
             }
-            .task { await vm.load() }
+            .onAppear {
+                if vm.stories.isEmpty {
+                    Task { await vm.load() }
+                }
+            }
             .navigationTitle("Hacker News")
         }
     }
