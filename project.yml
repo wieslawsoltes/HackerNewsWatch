@@ -12,6 +12,7 @@ targets:
     deploymentTarget: "10.0"
     sources:
       - path: Sources/WatchApp
+    dependencies: []
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.HackerNewsWatch.watchapp
@@ -21,6 +22,25 @@ targets:
         CURRENT_PROJECT_VERSION: 1
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    scheme:
+      testTargets: []
+
+  HackerNewsWatch Widget Extension:
+    type: app-extension
+    platform: watchOS
+    deploymentTarget: "10.0"
+    sources:
+      - path: Sources/WidgetExtension
+    dependencies:
+      - target: HackerNewsWatch Watch App
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.HackerNewsWatch.watchapp.widget
+        SWIFT_VERSION: 5.9
+        INFOPLIST_FILE: Sources/WidgetExtension/Info.plist
+        MARKETING_VERSION: 1.0
+        CURRENT_PROJECT_VERSION: 1
+        SKIP_INSTALL: YES
     scheme:
       testTargets: []
 

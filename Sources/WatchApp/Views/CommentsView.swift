@@ -1,8 +1,11 @@
 import SwiftUI
+import WatchKit
 
 struct CommentsView: View {
     let story: HNStory
     @StateObject private var vm = CommentsViewModel.shared
+    @State private var crownValue: Double = 0
+    @State private var selectedCommentIndex: Int = 0
     
     var body: some View {
         List {
@@ -83,6 +86,23 @@ struct CommentsView: View {
         .scrollBounceBehavior(.always)
         .refreshable {
             await vm.load(for: story, forceReload: true)
+        }
+        .focusable()
+        .digitalCrownRotation(
+            $crownValue,
+            from: 0,
+            through: Double(max(0, (vm.root?.children.count ?? 1) - 1)),
+            by: 1,
+            sensitivity: .medium,
+            isContinuous: false,
+            isHapticFeedbackEnabled: true
+        )
+        .onChange(of: crownValue) { _, newValue in
+            let newIndex = Int(newValue.rounded())
+            if newIndex != selectedCommentIndex && newIndex < (vm.root?.children.count ?? 0) {
+                selectedCommentIndex = newIndex
+                WKInterfaceDevice.current().play(.click)
+            }
         }
         .navigationTitle("Comments")
         .navigationDestination(for: URL.self) { url in

@@ -1,8 +1,11 @@
 import SwiftUI
+import WatchKit
 
 struct FeedView: View {
     @StateObject private var vm = FeedViewModel.shared
     @StateObject private var savedArticlesManager = SavedArticlesManager.shared
+    @State private var crownValue: Double = 0
+    @State private var selectedStoryIndex: Int = 0
     
     var body: some View {
         NavigationStack {
@@ -55,6 +58,24 @@ struct FeedView: View {
             .refreshable {
                 await vm.load()
             }
+            .focusable()
+            .digitalCrownRotation(
+                $crownValue,
+                from: 0,
+                through: Double(max(0, vm.stories.count - 1)),
+                by: 1,
+                sensitivity: .medium,
+                isContinuous: false,
+                isHapticFeedbackEnabled: true
+            )
+            .onChange(of: crownValue) { _, newValue in
+                let newIndex = Int(newValue.rounded())
+                if newIndex != selectedStoryIndex && newIndex < vm.stories.count {
+                    selectedStoryIndex = newIndex
+                    // Provide haptic feedback for story selection
+                    WKInterfaceDevice.current().play(.click)
+                }
+            }
             .navigationDestination(for: HNStory.self) { story in
                 CommentsView(story: story)
             }
@@ -68,6 +89,22 @@ struct FeedView: View {
             }
             .navigationTitle(vm.feedType.displayName)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(action: {
+                        vm.toggleLiveMode()
+                    }) {
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(vm.isLiveMode ? .green : .gray)
+                                .frame(width: 6, height: 6)
+                            Text(vm.isLiveMode ? "LIVE" : "STATIC")
+                                .font(.caption2)
+                                .foregroundStyle(vm.isLiveMode ? .green : .gray)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+                
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: {
                         Task { await vm.load() }
