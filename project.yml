@@ -9,7 +9,7 @@ targets:
   HackerNewsWatch Watch App:
     type: application
     platform: watchOS
-    deploymentTarget: "10.0"
+    deploymentTarget: "11.0"
     sources:
       - path: Sources/WatchApp
     settings:
