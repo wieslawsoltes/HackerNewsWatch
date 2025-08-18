@@ -43,6 +43,18 @@ struct CommentsView: View {
         .navigationDestination(for: URL.self) { url in
             ArticleReaderView(url: url)
         }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: {
+                    Task { await vm.load(for: story, forceReload: true) }
+                }) {
+                    Image(systemName: "arrow.clockwise")
+                        .foregroundStyle(.orange)
+                }
+                .buttonStyle(.plain)
+                .disabled(vm.isLoading)
+            }
+        }
         .onAppear {
             Task {
                 await vm.load(for: story)

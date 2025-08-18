@@ -64,6 +64,18 @@ struct FeedView: View {
                 }
             }
             .navigationTitle(vm.feedType.displayName)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: {
+                        Task { await vm.load() }
+                    }) {
+                        Image(systemName: "arrow.clockwise")
+                            .foregroundStyle(.orange)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(vm.isLoading)
+                }
+            }
         }
     }
 }
