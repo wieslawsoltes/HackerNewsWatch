@@ -82,7 +82,6 @@ struct CommentNodeView: View {
                         }
                     }
                     Text(cleanHTML(node.comment.text ?? "[no text]"))
-                        .font(.footnote)
                 }
             }
             
@@ -113,21 +112,121 @@ struct CommentNodeView: View {
         isExpanded.toggle()
     }
     
-    private func cleanHTML(_ html: String) -> String {
+    private func cleanHTML(_ html: String) -> AttributedString {
+        var attributedString = AttributedString()
+        
+        // First, handle HTML entities
         var text = html
-        let replacements: [(String, String)] = [
-            ("<p>", "\n\n"),
-            ("<i>", "\u{1F446}"),
+        let htmlEntities: [(String, String)] = [
+            ("&quot;", "\""),
+            ("&apos;", "'"),
+            ("&amp;", "&"),
+            ("&gt;", ">"),
+            ("&lt;", "<"),
+            ("&#x27;", "'"),
+            ("&#x2F;", "/"),
+            ("&#39;", "'"),
+            ("&nbsp;", " ")
         ]
-        for (from, to) in replacements {
-            text = text.replacingOccurrences(of: from, with: to)
+        
+        for (entity, replacement) in htmlEntities {
+            text = text.replacingOccurrences(of: entity, with: replacement)
         }
-        text = text.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-        text = text.replacingOccurrences(of: "&quot;", with: "\"")
-        text = text.replacingOccurrences(of: "&apos;", with: "'")
-        text = text.replacingOccurrences(of: "&amp;", with: "&")
-        text = text.replacingOccurrences(of: "&gt;", with: ">")
-        text = text.replacingOccurrences(of: "&lt;", with: "<")
-        return text
+        
+        // Parse HTML tags and apply formatting
+        let components = parseHTMLComponents(text)
+        
+        for component in components {
+            var componentString = AttributedString(component.text)
+            
+            // Apply formatting based on tags
+            if component.tags.contains("i") || component.tags.contains("em") {
+                componentString.font = .footnote.italic()
+            }
+            if component.tags.contains("b") || component.tags.contains("strong") {
+                componentString.font = .footnote.bold()
+            }
+            if component.tags.contains("code") {
+                componentString.font = .footnote.monospaced()
+                componentString.backgroundColor = Color.gray.opacity(0.2)
+            }
+            if component.tags.contains("a") {
+                componentString.foregroundColor = .orange
+                componentString.underlineStyle = .single
+            }
+            
+            attributedString.append(componentString)
+            
+            // Add line breaks for block elements
+            if component.tags.contains("p") || component.tags.contains("br") {
+                attributedString.append(AttributedString("\n\n"))
+            }
+        }
+        
+        return attributedString
+    }
+    
+    private struct HTMLComponent {
+        let text: String
+        let tags: Set<String>
+    }
+    
+    private func parseHTMLComponents(_ html: String) -> [HTMLComponent] {
+        var components: [HTMLComponent] = []
+        var currentText = ""
+        var tagStack: [String] = []
+        var i = html.startIndex
+        
+        while i < html.endIndex {
+            if html[i] == "<" {
+                // Save current text if any
+                if !currentText.isEmpty {
+                    components.append(HTMLComponent(text: currentText, tags: Set(tagStack)))
+                    currentText = ""
+                }
+                
+                // Find the end of the tag
+                guard let tagEnd = html[i...].firstIndex(of: ">") else {
+                    currentText.append(html[i])
+                    i = html.index(after: i)
+                    continue
+                }
+                
+                let tagContent = String(html[html.index(after: i)..<tagEnd])
+                let isClosingTag = tagContent.hasPrefix("/")
+                let tagName = isClosingTag ? String(tagContent.dropFirst()) : tagContent.components(separatedBy: " ").first ?? tagContent
+                
+                if isClosingTag {
+                    // Remove from stack
+                    if let index = tagStack.lastIndex(of: tagName) {
+                        tagStack.remove(at: index)
+                    }
+                } else {
+                    // Add to stack (ignore self-closing tags like <br/>)
+                    if !tagContent.hasSuffix("/") && !["br", "hr", "img"].contains(tagName) {
+                        tagStack.append(tagName)
+                    }
+                    
+                    // Handle special cases
+                    if tagName == "br" {
+                        components.append(HTMLComponent(text: "\n", tags: Set(tagStack)))
+                    } else if tagName == "p" && !components.isEmpty {
+                        components.append(HTMLComponent(text: "\n\n", tags: Set(tagStack)))
+                    }
+                }
+                
+                i = html.index(after: tagEnd)
+            } else {
+                currentText.append(html[i])
+                i = html.index(after: i)
+            }
+        }
+        
+        // Add remaining text
+        if !currentText.isEmpty {
+            components.append(HTMLComponent(text: currentText, tags: Set(tagStack)))
+        }
+        
+        return components
     }
 }
