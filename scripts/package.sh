@@ -43,23 +43,28 @@ echo "App path: $APP_PATH"
 
 ARTIFACTS_DIR="artifacts"
 mkdir -p "$ARTIFACTS_DIR"
+ROOT_DIR="$(pwd)"
 
 # Create zip for the .app bundle
 APP_ZIP="$ARTIFACTS_DIR/HackerNewsWatch_Watch_App_${CONFIGURATION}-watchsimulator.zip"
+APP_ZIP_ABS="$ROOT_DIR/$APP_ZIP"
+rm -f "$APP_ZIP_ABS"
 echo "Creating app archive: $APP_ZIP"
 (
   cd "$(dirname "$APP_PATH")"
-  zip -9 -r "$PWD/$APP_ZIP" "$(basename "$APP_PATH")" >/dev/null
+  zip -9 -r "$APP_ZIP_ABS" "$(basename "$APP_PATH")" >/dev/null
 )
 
 # Create zip for dSYM if available
 DSYM_PATH="${APP_PATH}.dSYM"
 if [ -d "$DSYM_PATH" ]; then
   DSYM_ZIP="$ARTIFACTS_DIR/HackerNewsWatch_Watch_App_${CONFIGURATION}-watchsimulator.dSYM.zip"
+  DSYM_ZIP_ABS="$ROOT_DIR/$DSYM_ZIP"
+  rm -f "$DSYM_ZIP_ABS"
   echo "Creating dSYM archive: $DSYM_ZIP"
   (
     cd "$(dirname "$DSYM_PATH")"
-    zip -9 -r "$PWD/$DSYM_ZIP" "$(basename "$DSYM_PATH")" >/dev/null
+    zip -9 -r "$DSYM_ZIP_ABS" "$(basename "$DSYM_PATH")" >/dev/null
   )
 else
   echo "dSYM not found at $DSYM_PATH (skipping)"
