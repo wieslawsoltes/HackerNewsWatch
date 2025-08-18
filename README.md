@@ -7,6 +7,9 @@ A minimal Hacker News reader for Apple Watch built with SwiftUI.
 - "Open Article" link at the top opens the article in the watch browser
 - HN-like styling (orange accent)
 
+<img width="580" height="612" alt="image" src="https://github.com/user-attachments/assets/100cdb20-bbbc-404f-8790-566939c3acfe" />
+
+
 ## Requirements
 - Xcode 15 or newer
 - macOS with command line tools
