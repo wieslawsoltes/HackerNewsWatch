@@ -16,6 +16,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Select Xcode version (latest stable)
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    - name: Show selected Xcode version
+      run: xcodebuild -version
     - name: Generate Xcode project
       run: bash ./scripts/generate.sh
     - name: Build watchOS app
