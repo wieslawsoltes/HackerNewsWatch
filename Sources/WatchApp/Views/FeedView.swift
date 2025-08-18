@@ -50,7 +50,8 @@ struct FeedView: View {
                     }
                 }
             }
-            .listStyle(.plain)
+            .listStyle(.carousel)
+            .scrollBounceBehavior(.always)
             .refreshable {
                 await vm.load()
             }
