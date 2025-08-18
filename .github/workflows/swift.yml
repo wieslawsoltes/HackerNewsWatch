@@ -26,3 +26,11 @@ jobs:
       run: bash ./scripts/generate.sh
     - name: Build watchOS app
       run: bash ./scripts/build.sh
+    - name: Package app artifacts
+      run: bash ./scripts/package.sh
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: watchos-app-artifacts
+        path: artifacts/*.zip
+        if-no-files-found: error
