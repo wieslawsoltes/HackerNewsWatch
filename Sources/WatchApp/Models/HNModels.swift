@@ -1,6 +1,6 @@
 import Foundation
 
-struct HNStory: Identifiable, Decodable, Hashable {
+struct HNStory: Identifiable, Codable, Hashable {
     let id: Int
     let title: String
     let url: String?

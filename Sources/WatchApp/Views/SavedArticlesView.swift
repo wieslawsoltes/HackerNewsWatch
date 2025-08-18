@@ -1,73 +1,52 @@
 import SwiftUI
 
-struct FeedView: View {
-    @StateObject private var vm = FeedViewModel()
+struct SavedArticlesView: View {
     @StateObject private var savedArticlesManager = SavedArticlesManager.shared
     
     var body: some View {
         NavigationStack {
             List {
-                if vm.isLoading && vm.stories.isEmpty {
-                    HStack {
-                        Spacer()
-                        ProgressView("Loading…")
-                        Spacer()
-                    }
-                    .listRowBackground(Color.clear)
-                } else if let error = vm.error {
+                if savedArticlesManager.savedStories.isEmpty {
                     VStack(spacing: 8) {
-                        Text("Error: \(error)")
-                        Button("Retry") { Task { await vm.load() } }
+                        Image(systemName: "bookmark")
+                            .font(.largeTitle)
+                            .foregroundStyle(.secondary)
+                        Text("No saved articles")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                        Text("Tap the bookmark icon on any story to save it for later")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
                     }
                     .listRowBackground(Color.clear)
+                    .padding(.vertical, 20)
                 } else {
-                    ForEach(vm.stories) { story in
+                    ForEach(savedArticlesManager.savedStories) { story in
                         NavigationLink(value: story) {
-                            StoryRow(story: story, savedArticlesManager: savedArticlesManager)
+                            SavedStoryRow(story: story, savedArticlesManager: savedArticlesManager)
                         }
                     }
-                    
-                    if vm.hasMoreStories {
-                        if vm.isLoadingMore {
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                Spacer()
-                            }
-                            .padding(.vertical, 8)
-                            .listRowBackground(Color.clear)
-                        } else {
-                            Button("Load More") {
-                                Task { await vm.loadMore() }
-                            }
-                            .foregroundStyle(.orange)
-                            .listRowBackground(Color.clear)
-                            .onAppear {
-                                Task { await vm.loadMore() }
-                            }
-                        }
-                    }
+                    .onDelete(perform: deleteStories)
                 }
             }
             .listStyle(.plain)
-            .refreshable {
-                await vm.load()
-            }
+            .navigationTitle("Saved Articles")
             .navigationDestination(for: HNStory.self) { story in
                 CommentsView(story: story)
             }
-            .onAppear {
-                if vm.stories.isEmpty {
-                    Task { await vm.load() }
-                }
-            }
-            .navigationTitle("Hacker News")
+        }
+    }
+    
+    private func deleteStories(at offsets: IndexSet) {
+        for index in offsets {
+            let story = savedArticlesManager.savedStories[index]
+            savedArticlesManager.removeStory(story)
         }
     }
 }
 
-struct StoryRow: View {
+struct SavedStoryRow: View {
     let story: HNStory
     @ObservedObject var savedArticlesManager: SavedArticlesManager
     
@@ -101,9 +80,9 @@ struct StoryRow: View {
             Spacer()
             
             Button(action: {
-                savedArticlesManager.toggleSaveStory(story)
+                savedArticlesManager.removeStory(story)
             }) {
-                Image(systemName: savedArticlesManager.isStorySaved(story) ? "bookmark.fill" : "bookmark")
+                Image(systemName: "bookmark.fill")
                     .foregroundStyle(.orange)
                     .font(.title3)
             }
@@ -111,4 +90,8 @@ struct StoryRow: View {
         }
         .padding(.vertical, 4)
     }
+}
+
+#Preview {
+    SavedArticlesView()
 }

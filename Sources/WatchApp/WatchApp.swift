@@ -4,8 +4,20 @@ import SwiftUI
 struct HackerNewsWatchApp: App {
     var body: some Scene {
         WindowGroup {
-            FeedView()
-                .tint(.orange)
+            TabView {
+                FeedView()
+                    .tabItem {
+                        Image(systemName: "list.bullet")
+                        Text("Feed")
+                    }
+                
+                SavedArticlesView()
+                    .tabItem {
+                        Image(systemName: "bookmark.fill")
+                        Text("Saved")
+                    }
+            }
+            .tint(.orange)
         }
     }
 }
