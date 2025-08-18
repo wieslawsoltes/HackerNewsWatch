@@ -14,9 +14,31 @@ struct FeedView: View {
                         Button("Retry") { Task { await vm.load() } }
                     }
                 } else {
-                    List(vm.stories) { story in
-                        NavigationLink(value: story) {
-                            StoryRow(story: story)
+                    List {
+                        ForEach(vm.stories) { story in
+                            NavigationLink(value: story) {
+                                StoryRow(story: story)
+                            }
+                        }
+                        
+                        if vm.hasMoreStories {
+                            if vm.isLoadingMore {
+                                HStack {
+                                    Spacer()
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                    Spacer()
+                                }
+                                .padding(.vertical, 8)
+                            } else {
+                                Button("Load More") {
+                                    Task { await vm.loadMore() }
+                                }
+                                .foregroundStyle(.orange)
+                                .onAppear {
+                                    Task { await vm.loadMore() }
+                                }
+                            }
                         }
                     }
                     .listStyle(.carousel)

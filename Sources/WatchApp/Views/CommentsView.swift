@@ -13,9 +13,18 @@ struct CommentsView: View {
                 }
             }
             if let root = vm.root {
-                CommentTree(node: root)
+                CommentTree(node: root, viewModel: vm)
             } else if vm.isLoading {
-                ProgressView("Loading comments…")
+                VStack(spacing: 8) {
+                    ProgressView("Loading comments…")
+                    if vm.loadingProgress > 0 {
+                        ProgressView(value: vm.loadingProgress)
+                            .progressViewStyle(LinearProgressViewStyle())
+                        Text("\(Int(vm.loadingProgress * 100))%")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             } else if let error = vm.error {
                 Text("Error: \(error)")
             }
@@ -34,10 +43,11 @@ struct CommentsView: View {
 
 struct CommentTree: View {
     let node: CommentsViewModel.CommentNode
+    let viewModel: CommentsViewModel
     
     var body: some View {
         ForEach(node.children) { child in
-            CommentNodeView(node: child, depth: 0)
+            CommentNodeView(node: child, depth: 0, viewModel: viewModel)
         }
     }
 }
@@ -45,6 +55,8 @@ struct CommentTree: View {
 struct CommentNodeView: View {
     let node: CommentsViewModel.CommentNode
     let depth: Int
+    let viewModel: CommentsViewModel
+    @State private var isExpanded = true
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -55,19 +67,50 @@ struct CommentNodeView: View {
                         .frame(width: 2)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    if let by = node.comment.by {
-                        Text(by).font(.caption2).foregroundStyle(.secondary)
+                    HStack {
+                        if let by = node.comment.by {
+                            Text(by).font(.caption2).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        if hasChildren {
+                            Button(action: toggleExpansion) {
+                                Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                                    .font(.caption2)
+                                    .foregroundStyle(.orange)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
                     }
                     Text(cleanHTML(node.comment.text ?? "[no text]"))
                         .font(.footnote)
                 }
             }
-            if !node.children.isEmpty {
-                ForEach(node.children) { child in
-                    CommentNodeView(node: child, depth: depth + 1)
+            
+            if isExpanded {
+                if !node.isChildrenLoaded && hasChildren {
+                    Button("Load replies") {
+                        Task {
+                            await viewModel.loadChildren(for: node.id)
+                        }
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .padding(.leading, depth > 0 ? 8 : 0)
+                } else if !node.children.isEmpty {
+                    ForEach(node.children) { child in
+                        CommentNodeView(node: child, depth: depth + 1, viewModel: viewModel)
+                    }
                 }
             }
         }
+    }
+    
+    private var hasChildren: Bool {
+        !(node.comment.kids?.isEmpty ?? true)
+    }
+    
+    private func toggleExpansion() {
+        isExpanded.toggle()
     }
     
     private func cleanHTML(_ html: String) -> String {
