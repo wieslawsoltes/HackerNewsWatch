@@ -1,5 +1,7 @@
 # HackerNewsWatch (watchOS)
 
+[![Swift](https://github.com/wieslawsoltes/HackerNewsWatch/actions/workflows/swift.yml/badge.svg)](https://github.com/wieslawsoltes/HackerNewsWatch/actions/workflows/swift.yml)
+
 A minimal Hacker News reader for Apple Watch built with SwiftUI.
 
 - Scrollable top stories feed with title, points, and comments count
