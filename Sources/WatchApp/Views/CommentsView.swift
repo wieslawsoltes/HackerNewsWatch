@@ -43,7 +43,11 @@ struct CommentsView: View {
         .navigationDestination(for: URL.self) { url in
             ArticleReaderView(url: url)
         }
-        .task { await vm.load(for: story) }
+        .onAppear {
+            Task {
+                await vm.load(for: story)
+            }
+        }
     }
 }
 
