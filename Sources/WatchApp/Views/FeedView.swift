@@ -86,8 +86,12 @@ struct FeedView: View {
             .navigationDestination(for: HNStory.self) { story in
                 CommentsView(story: story)
             }
-            .navigationDestination(for: String.self) { username in
-                UserDetailsView(username: username)
+            .navigationDestination(for: String.self) { value in
+                if value == "search" {
+                    SearchView()
+                } else {
+                    UserDetailsView(username: value)
+                }
             }
             .onAppear {
                 if vm.stories.isEmpty {
@@ -119,16 +123,26 @@ struct FeedView: View {
                 }
                 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: {
-                        Task { await vm.load() }
-                    }) {
-                        Image(systemName: "arrow.clockwise")
-                            .foregroundStyle(.orange)
-                            .font(.title3)
+                    HStack(spacing: 8) {
+                        NavigationLink(value: "search") {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundStyle(.orange)
+                                .font(.title3)
+                        }
+                        .background(.regularMaterial, in: Circle())
+                        .buttonStyle(.plain)
+                        
+                        Button(action: {
+                            Task { await vm.load() }
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                                .foregroundStyle(.orange)
+                                .font(.title3)
+                        }
+                        .background(.regularMaterial, in: Circle())
+                        .buttonStyle(.plain)
+                        .disabled(vm.isLoading)
                     }
-                    .background(.regularMaterial, in: Circle())
-                    .buttonStyle(.plain)
-                    .disabled(vm.isLoading)
                 }
             }
         }
@@ -171,7 +185,7 @@ struct StoryRow: View {
                         Image(systemName: "arrowtriangle.up.fill")
                             .foregroundStyle(.orange)
                         Text("\(score)")
-                            .font(.caption2)
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     let commentsCount = story.descendants ?? story.kids?.count
@@ -180,7 +194,7 @@ struct StoryRow: View {
                             Image(systemName: "text.bubble")
                                 .foregroundStyle(.secondary)
                             Text("\(count)")
-                                .font(.caption2)
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     }

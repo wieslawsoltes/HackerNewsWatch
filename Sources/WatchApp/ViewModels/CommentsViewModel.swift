@@ -13,7 +13,7 @@ final class CommentsViewModel: ObservableObject {
     private var totalComments = 0
     private var loadedComments = 0
     private var currentStoryId: Int?
-    
+
     struct CommentNode: Identifiable {
         let id: Int
         let comment: HNComment
@@ -27,9 +27,9 @@ final class CommentsViewModel: ObservableObject {
             self.isChildrenLoaded = isChildrenLoaded
         }
     }
-    
+
     func load(for story: HNStory, forceReload: Bool = false) async {
-        // Check if we already have this story loaded and it's not a force reload
+        // If the same story is already loaded and not forcing reload, skip
         if !forceReload && currentStoryId == story.id && root != nil {
             return
         }
@@ -43,13 +43,21 @@ final class CommentsViewModel: ObservableObject {
         defer { isLoading = false }
         
         do {
-            let kids = story.kids ?? []
+            // If we navigated from search results, the story likely lacks `kids`.
+            // Fetch the full story by id to obtain kids before loading comments.
+            var storyToLoad = story
+            if story.kids == nil {
+                let full: HNStory = try await service.item(story.id)
+                storyToLoad = full
+            }
+            
+            let kids = storyToLoad.kids ?? []
             totalComments = kids.count
             
             // Create root node immediately
             self.root = CommentNode(
-                id: story.id,
-                comment: HNComment(id: story.id, by: nil, text: "", time: nil, kids: story.kids, deleted: nil, dead: nil),
+                id: storyToLoad.id,
+                comment: HNComment(id: storyToLoad.id, by: nil, text: "", time: nil, kids: storyToLoad.kids, deleted: nil, dead: nil),
                 children: [],
                 isChildrenLoaded: false
             )
@@ -59,7 +67,7 @@ final class CommentsViewModel: ObservableObject {
             
             // Update root with loaded children
             self.root = CommentNode(
-                id: story.id,
+                id: storyToLoad.id,
                 comment: self.root!.comment,
                 children: rootChildren,
                 isChildrenLoaded: true
@@ -70,7 +78,7 @@ final class CommentsViewModel: ObservableObject {
             self.error = error.localizedDescription
         }
     }
-    
+
     func loadChildren(for nodeId: Int) async {
         guard let root = root else { return }
         
@@ -111,7 +119,7 @@ final class CommentsViewModel: ObservableObject {
             isChildrenLoaded: node.isChildrenLoaded
         )
     }
-    
+
     private func loadNodesProgressively(ids: [Int]) async -> [CommentNode] {
         var nodes: [CommentNode] = []
         nodes.reserveCapacity(ids.count)
