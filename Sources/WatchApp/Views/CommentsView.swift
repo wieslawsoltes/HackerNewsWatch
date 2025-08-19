@@ -62,23 +62,21 @@ struct CommentsView: View {
             }
             if let root = vm.root {
                 CommentTree(node: root, viewModel: vm)
-            } else if vm.isLoading {
-                VStack(spacing: 8) {
-                    ProgressView("Loading comments…")
-                        .font(.caption)
-                    if vm.loadingProgress > 0 {
-                        VStack(spacing: 4) {
-                            ProgressView(value: vm.loadingProgress)
-                                .progressViewStyle(LinearProgressViewStyle())
-                                .scaleEffect(0.8)
-                            Text("\(Int(vm.loadingProgress * 100))%")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
+                if vm.isLoading {
+                    HStack {
+                        Spacer()
+                        ProgressView("Loading…")
+                        Spacer()
                     }
+                    .listRowBackground(Color.clear)
+                }
+            } else if vm.isLoading {
+                HStack {
+                    Spacer()
+                    ProgressView("Loading…")
+                    Spacer()
                 }
                 .listRowBackground(Color.clear)
-                .padding(.vertical, 8)
             } else if let error = vm.error {
                 Text("Error: \(error)")
             }
