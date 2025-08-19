@@ -3,9 +3,11 @@ import Foundation
 @MainActor
 class SavedArticlesManager: ObservableObject {
     @Published var savedStories: [HNStory] = []
+    @Published var isReloading = false
     
     private let userDefaults = UserDefaults.standard
     private let savedStoriesKey = "SavedHNStories"
+    private let service = HNService()
     
     static let shared = SavedArticlesManager()
     
@@ -54,5 +56,27 @@ class SavedArticlesManager: ObservableObject {
     func clearAllSavedStories() {
         savedStories.removeAll()
         userDefaults.removeObject(forKey: savedStoriesKey)
+    }
+    
+    func reloadSavedStories() async {
+        guard !savedStories.isEmpty else { return }
+        
+        isReloading = true
+        defer { isReloading = false }
+        
+        var updatedStories: [HNStory] = []
+        
+        for story in savedStories {
+            do {
+                let updatedStory: HNStory = try await service.item(story.id)
+                updatedStories.append(updatedStory)
+            } catch {
+                // If we can't fetch the updated story, keep the original
+                updatedStories.append(story)
+            }
+        }
+        
+        savedStories = updatedStories
+        persistSavedStories()
     }
 }

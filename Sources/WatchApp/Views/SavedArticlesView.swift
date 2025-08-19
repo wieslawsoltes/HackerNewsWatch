@@ -35,6 +35,23 @@ struct SavedArticlesView: View {
             .navigationDestination(for: HNStory.self) { story in
                 CommentsView(story: story)
             }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        Task {
+                            await savedArticlesManager.reloadSavedStories()
+                        }
+                    } label: {
+                        if savedArticlesManager.isReloading {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    }
+                    .disabled(savedArticlesManager.savedStories.isEmpty || savedArticlesManager.isReloading)
+                }
+            }
         }
     }
     
@@ -54,8 +71,9 @@ struct SavedStoryRow: View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(story.title)
-                    .font(.headline)
-                    .foregroundStyle(.orange)
+                    .font(.callout)
+                    .fontWeight(.regular)
+                    .foregroundStyle(.white)
                 HStack(spacing: 8) {
                     if let score = story.score {
                         Image(systemName: "arrowtriangle.up.fill")
@@ -86,6 +104,7 @@ struct SavedStoryRow: View {
                     .foregroundStyle(.orange)
                     .font(.title3)
             }
+            .background(.regularMaterial, in: Circle())
             .buttonStyle(PlainButtonStyle())
         }
         .padding(.vertical, 4)
