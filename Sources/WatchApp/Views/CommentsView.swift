@@ -99,8 +99,12 @@ struct CommentsView: View {
         )
         .onChange(of: crownValue) { _, newValue in
             let newIndex = Int(newValue.rounded())
-            if newIndex != selectedCommentIndex && newIndex < (vm.root?.children.count ?? 0) {
-                selectedCommentIndex = newIndex
+            let maxComments = vm.root?.children.count ?? 0
+            let maxIndex = max(0, maxComments - 1)
+            let clampedIndex = min(max(0, newIndex), maxIndex)
+            
+            if clampedIndex != selectedCommentIndex && clampedIndex < maxComments {
+                selectedCommentIndex = clampedIndex
                 WKInterfaceDevice.current().play(.click)
             }
         }
@@ -118,7 +122,9 @@ struct CommentsView: View {
                 }) {
                     Image(systemName: "arrow.clockwise")
                         .foregroundStyle(.orange)
+                        .font(.title3)
                 }
+                .background(.regularMaterial, in: Circle())
                 .buttonStyle(.plain)
                 .disabled(vm.isLoading)
             }
@@ -127,6 +133,26 @@ struct CommentsView: View {
             Task {
                 await vm.load(for: story)
             }
+            // Reset crown state when view appears
+            resetCrownState()
+        }
+        .onDisappear {
+            // Reset crown state when leaving comments view
+            // This ensures clean state when returning to feed
+            crownValue = 0
+            selectedCommentIndex = 0
+        }
+    }
+    
+    private func resetCrownState() {
+        // Reset crown value to current selected comment index to maintain consistency
+        crownValue = Double(selectedCommentIndex)
+        
+        // Ensure selected index is within bounds
+        let maxComments = vm.root?.children.count ?? 0
+        if selectedCommentIndex >= maxComments {
+            selectedCommentIndex = max(0, maxComments - 1)
+            crownValue = Double(selectedCommentIndex)
         }
     }
     
@@ -198,6 +224,7 @@ struct CommentNodeView: View {
                                     .font(.caption2)
                                     .foregroundStyle(.orange)
                             }
+                            .background(.regularMaterial, in: Circle())
                             .buttonStyle(PlainButtonStyle())
                         }
                     }

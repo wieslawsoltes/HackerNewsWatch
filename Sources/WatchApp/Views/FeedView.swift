@@ -70,11 +70,18 @@ struct FeedView: View {
             )
             .onChange(of: crownValue) { _, newValue in
                 let newIndex = Int(newValue.rounded())
-                if newIndex != selectedStoryIndex && newIndex < vm.stories.count {
-                    selectedStoryIndex = newIndex
+                let maxIndex = max(0, vm.stories.count - 1)
+                let clampedIndex = min(max(0, newIndex), maxIndex)
+                
+                if clampedIndex != selectedStoryIndex && clampedIndex < vm.stories.count {
+                    selectedStoryIndex = clampedIndex
                     // Provide haptic feedback for story selection
                     WKInterfaceDevice.current().play(.click)
                 }
+            }
+            .onChange(of: vm.stories.count) { _, _ in
+                // Reset crown state when stories count changes
+                resetCrownState()
             }
             .navigationDestination(for: HNStory.self) { story in
                 CommentsView(story: story)
@@ -86,6 +93,12 @@ struct FeedView: View {
                 if vm.stories.isEmpty {
                     Task { await vm.load() }
                 }
+                // Reset crown state when returning to this view
+                resetCrownState()
+            }
+            .onDisappear {
+                // Save current crown state when leaving view
+                // This helps maintain scroll position context
             }
             .navigationTitle(vm.feedType.displayName)
             .toolbar {
@@ -111,11 +124,24 @@ struct FeedView: View {
                     }) {
                         Image(systemName: "arrow.clockwise")
                             .foregroundStyle(.orange)
+                            .font(.title3)
                     }
+                    .background(.regularMaterial, in: Circle())
                     .buttonStyle(.plain)
                     .disabled(vm.isLoading)
                 }
             }
+        }
+    }
+    
+    private func resetCrownState() {
+        // Reset crown value to current selected story index to maintain consistency
+        crownValue = Double(selectedStoryIndex)
+        
+        // Ensure selected index is within bounds
+        if selectedStoryIndex >= vm.stories.count {
+            selectedStoryIndex = max(0, vm.stories.count - 1)
+            crownValue = Double(selectedStoryIndex)
         }
     }
 }
@@ -128,8 +154,9 @@ struct StoryRow: View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(story.title)
-                    .font(.headline)
-                    .foregroundStyle(.orange)
+                    .font(.callout)
+                    .fontWeight(.regular)
+                    .foregroundStyle(.white)
                 HStack(spacing: 8) {
                     if let by = story.by {
                         NavigationLink(value: by) {
@@ -169,6 +196,7 @@ struct StoryRow: View {
                     .foregroundStyle(.orange)
                     .font(.title3)
             }
+            .background(.regularMaterial, in: Circle())
             .buttonStyle(PlainButtonStyle())
         }
         .padding(.vertical, 4)
