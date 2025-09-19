@@ -4,6 +4,7 @@ struct SearchView: View {
     @StateObject private var vm = SearchViewModel()
     @StateObject private var savedArticlesManager = SavedArticlesManager.shared
     @FocusState private var isSearchFocused: Bool
+    @State private var selectedUser: String?
     
     var body: some View {
         List {
@@ -70,7 +71,13 @@ struct SearchView: View {
             } else {
                 ForEach(vm.results) { story in
                     NavigationLink(value: story) {
-                        StoryRow(story: story, savedArticlesManager: savedArticlesManager)
+                        StoryRow(
+                            story: story,
+                            savedArticlesManager: savedArticlesManager,
+                            onUserSelected: { username in
+                                selectedUser = username
+                            }
+                        )
                     }
                 }
                 if vm.canLoadMore {
@@ -96,6 +103,9 @@ struct SearchView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: HNStory.self) { story in
             CommentsView(story: story)
+        }
+        .navigationDestination(item: $selectedUser) { username in
+            UserDetailsView(username: username)
         }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

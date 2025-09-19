@@ -37,3 +37,7 @@ struct HNUser: Identifiable, Decodable {
         return formatter.string(from: date)
     }
 }
+
+extension String: Identifiable {
+    public var id: String { self }
+}

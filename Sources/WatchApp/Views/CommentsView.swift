@@ -7,6 +7,7 @@ struct CommentsView: View {
     @StateObject private var vm = CommentsViewModel.shared
     @State private var crownValue: Double = 0
     @State private var selectedCommentIndex: Int = 0
+    @State private var selectedUser: String?
     @FocusState private var isCrownFocused: Bool
     
     var body: some View {
@@ -21,7 +22,9 @@ struct CommentsView: View {
                     
                     HStack(spacing: 12) {
                         if let by = story.by {
-                            NavigationLink(value: by) {
+                            Button(action: {
+                                selectedUser = by
+                            }) {
                                 Image(systemName: "person.circle")
                                     .foregroundStyle(.orange)
                                     .font(.caption)
@@ -63,7 +66,9 @@ struct CommentsView: View {
                 .padding(.vertical, 4)
             }
             if let root = vm.root {
-                CommentTree(node: root, viewModel: vm)
+                CommentTree(node: root, viewModel: vm, onUserSelected: { username in
+                    selectedUser = username
+                })
                 if vm.isLoading {
                     HStack {
                         Spacer()
@@ -113,7 +118,7 @@ struct CommentsView: View {
         .navigationDestination(for: URL.self) { url in
             ArticleReaderView(url: url)
         }
-        .navigationDestination(for: String.self) { username in
+        .navigationDestination(item: $selectedUser) { username in
             UserDetailsView(username: username)
         }
         .toolbar {
@@ -197,10 +202,16 @@ struct CommentsView: View {
 struct CommentTree: View {
     let node: CommentsViewModel.CommentNode
     let viewModel: CommentsViewModel
+    let onUserSelected: (String) -> Void
     
     var body: some View {
         ForEach(node.children) { child in
-            CommentNodeView(node: child, depth: 0, viewModel: viewModel)
+            CommentNodeView(
+                node: child,
+                depth: 0,
+                viewModel: viewModel,
+                onUserSelected: onUserSelected
+            )
         }
     }
 }
@@ -209,6 +220,7 @@ struct CommentNodeView: View {
     let node: CommentsViewModel.CommentNode
     let depth: Int
     let viewModel: CommentsViewModel
+    let onUserSelected: (String) -> Void
     @State private var isExpanded = true
     
     var body: some View {
@@ -222,7 +234,9 @@ struct CommentNodeView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack {
                         if let by = node.comment.by {
-                            NavigationLink(value: by) {
+                            Button(action: {
+                                onUserSelected(by)
+                            }) {
                                 HStack(spacing: 2) {
                                     Image(systemName: "person.circle")
                                         .foregroundStyle(.orange)
@@ -260,7 +274,12 @@ struct CommentNodeView: View {
                     .padding(.leading, depth > 0 ? 8 : 0)
                 } else if !node.children.isEmpty {
                     ForEach(node.children) { child in
-                        CommentNodeView(node: child, depth: depth + 1, viewModel: viewModel)
+                        CommentNodeView(
+                            node: child,
+                            depth: depth + 1,
+                            viewModel: viewModel,
+                            onUserSelected: onUserSelected
+                        )
                     }
                 }
             }

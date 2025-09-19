@@ -7,6 +7,7 @@ struct FeedView: View {
     @StateObject private var savedArticlesManager = SavedArticlesManager.shared
     @State private var crownValue: Double = 0
     @State private var selectedStoryIndex: Int = 0
+    @State private var selectedUser: String?
     @FocusState private var isCrownFocused: Bool
     
     var body: some View {
@@ -28,7 +29,13 @@ struct FeedView: View {
                 } else {
                     ForEach(vm.stories) { story in
                         NavigationLink(value: story) {
-                            StoryRow(story: story, savedArticlesManager: savedArticlesManager)
+                            StoryRow(
+                                story: story,
+                                savedArticlesManager: savedArticlesManager,
+                                onUserSelected: { username in
+                                    selectedUser = username
+                                }
+                            )
                         }
                     }
                     
@@ -89,12 +96,8 @@ struct FeedView: View {
             .navigationDestination(for: HNStory.self) { story in
                 CommentsView(story: story)
             }
-            .navigationDestination(for: String.self) { value in
-                if value == "search" {
-                    SearchView()
-                } else {
-                    UserDetailsView(username: value)
-                }
+            .navigationDestination(item: $selectedUser) { username in
+                UserDetailsView(username: username)
             }
             .onAppear {
                 if vm.stories.isEmpty {
@@ -142,7 +145,7 @@ struct FeedView: View {
                 
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 8) {
-                        NavigationLink(value: "search") {
+                        NavigationLink(destination: SearchView()) {
                             Image(systemName: "magnifyingglass")
                                 .foregroundStyle(.orange)
                                 .font(.title3)
@@ -181,6 +184,7 @@ struct FeedView: View {
 struct StoryRow: View {
     let story: HNStory
     @ObservedObject var savedArticlesManager: SavedArticlesManager
+    let onUserSelected: (String) -> Void
     
     var body: some View {
         HStack {
@@ -191,7 +195,9 @@ struct StoryRow: View {
                     .foregroundStyle(.white)
                 HStack(spacing: 8) {
                     if let by = story.by {
-                        NavigationLink(value: by) {
+                        Button(action: {
+                            onUserSelected(by)
+                        }) {
                             Image(systemName: "person.circle")
                                 .foregroundStyle(.orange)
                                 .font(.caption)
