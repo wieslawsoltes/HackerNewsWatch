@@ -2,10 +2,12 @@ import SwiftUI
 import WatchKit
 
 struct FeedView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var vm = FeedViewModel.shared
     @StateObject private var savedArticlesManager = SavedArticlesManager.shared
     @State private var crownValue: Double = 0
     @State private var selectedStoryIndex: Int = 0
+    @FocusState private var isCrownFocused: Bool
     
     var body: some View {
         NavigationStack {
@@ -58,7 +60,8 @@ struct FeedView: View {
             .refreshable {
                 await vm.load()
             }
-            .focusable()
+            .focusable(true)
+            .focused($isCrownFocused)
             .digitalCrownRotation(
                 $crownValue,
                 from: 0,
@@ -99,10 +102,25 @@ struct FeedView: View {
                 }
                 // Reset crown state when returning to this view
                 resetCrownState()
+                // Ensure the list regains crown focus after appearing
+                DispatchQueue.main.async {
+                    isCrownFocused = true
+                }
             }
             .onDisappear {
                 // Save current crown state when leaving view
                 // This helps maintain scroll position context
+                isCrownFocused = false
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    // Reapply focus when the scene becomes active again
+                    DispatchQueue.main.async {
+                        isCrownFocused = true
+                    }
+                } else {
+                    isCrownFocused = false
+                }
             }
             .navigationTitle(vm.feedType.displayName)
             .toolbar {

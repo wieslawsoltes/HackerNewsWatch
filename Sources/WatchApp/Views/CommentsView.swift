@@ -2,10 +2,12 @@ import SwiftUI
 import WatchKit
 
 struct CommentsView: View {
+    @Environment(\.scenePhase) private var scenePhase
     let story: HNStory
     @StateObject private var vm = CommentsViewModel.shared
     @State private var crownValue: Double = 0
     @State private var selectedCommentIndex: Int = 0
+    @FocusState private var isCrownFocused: Bool
     
     var body: some View {
         List {
@@ -85,7 +87,8 @@ struct CommentsView: View {
         .refreshable {
             await vm.load(for: story, forceReload: true)
         }
-        .focusable()
+        .focusable(true)
+        .focused($isCrownFocused)
         .digitalCrownRotation(
             $crownValue,
             from: 0,
@@ -133,12 +136,27 @@ struct CommentsView: View {
             }
             // Reset crown state when view appears
             resetCrownState()
+            // Ensure crown focus is regained after appearing
+            DispatchQueue.main.async {
+                isCrownFocused = true
+            }
         }
         .onDisappear {
             // Reset crown state when leaving comments view
             // This ensures clean state when returning to feed
             crownValue = 0
             selectedCommentIndex = 0
+            isCrownFocused = false
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                // Reapply focus when the scene becomes active again
+                DispatchQueue.main.async {
+                    isCrownFocused = true
+                }
+            } else {
+                isCrownFocused = false
+            }
         }
     }
     
