@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SavedArticlesView: View {
     @StateObject private var savedArticlesManager = SavedArticlesManager.shared
+    @State private var selectedUser: String?
     
     var body: some View {
         NavigationStack {
@@ -24,16 +25,25 @@ struct SavedArticlesView: View {
                 } else {
                     ForEach(savedArticlesManager.savedStories) { story in
                         NavigationLink(value: story) {
-                            SavedStoryRow(story: story, savedArticlesManager: savedArticlesManager)
+                            StoryRow(
+                                story: story,
+                                savedArticlesManager: savedArticlesManager,
+                                onUserSelected: { username in
+                                    selectedUser = username
+                                }
+                            )
                         }
                     }
                     .onDelete(perform: deleteStories)
                 }
             }
-            .listStyle(.plain)
+            .listStyle(.carousel)
             .navigationTitle("Saved Articles")
             .navigationDestination(for: HNStory.self) { story in
                 CommentsView(story: story)
+            }
+            .navigationDestination(item: $selectedUser) { username in
+                UserDetailsView(username: username)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -54,60 +64,12 @@ struct SavedArticlesView: View {
             }
         }
     }
-    
+
     private func deleteStories(at offsets: IndexSet) {
         for index in offsets {
             let story = savedArticlesManager.savedStories[index]
             savedArticlesManager.removeStory(story)
         }
-    }
-}
-
-struct SavedStoryRow: View {
-    let story: HNStory
-    @ObservedObject var savedArticlesManager: SavedArticlesManager
-    
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(story.title)
-                    .font(.callout)
-                    .fontWeight(.regular)
-                    .foregroundStyle(.white)
-                HStack(spacing: 8) {
-                    if let score = story.score {
-                        Image(systemName: "arrowtriangle.up.fill")
-                            .foregroundStyle(.orange)
-                        Text("\(score)")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    let commentsCount = story.descendants ?? story.kids?.count
-                    if let count = commentsCount {
-                        HStack(spacing: 4) {
-                            Image(systemName: "text.bubble")
-                                .foregroundStyle(.secondary)
-                            Text("\(count)")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-            }
-            
-            Spacer()
-            
-            Button(action: {
-                savedArticlesManager.removeStory(story)
-            }) {
-                Image(systemName: "bookmark.fill")
-                    .foregroundStyle(.orange)
-                    .font(.title3)
-            }
-            .background(.regularMaterial, in: Circle())
-            .buttonStyle(PlainButtonStyle())
-        }
-        .padding(.vertical, 4)
     }
 }
 
