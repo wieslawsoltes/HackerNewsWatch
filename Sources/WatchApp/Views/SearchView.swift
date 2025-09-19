@@ -9,21 +9,40 @@ struct SearchView: View {
     var body: some View {
         List {
             Section {
-                HStack(alignment: .center, spacing: 8) {
+                TextField(
+                    "",
+                    text: $vm.query,
+                    prompt: Text("Search Hacker News")
+                        .foregroundStyle(.secondary)
+                )
+                .textInputAutocapitalization(.never)
+                .disableAutocorrection(true)
+                .onSubmit {
+                    Task { await vm.search(reset: true) }
+                }
+                .padding(.leading, 34)
+                .padding(.trailing, vm.query.isEmpty ? 16 : 50)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .font(.body)
+                .focused($isSearchFocused)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(.regularMaterial)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(.white.opacity(0.1), lineWidth: 0.5)
+                )
+                .overlay(alignment: .leading) {
                     Image(systemName: "magnifyingglass")
                         .foregroundStyle(.secondary)
                         .imageScale(.medium)
-                        .frame(width: 18, height: 18, alignment: .center)
-                    TextField("Search Hacker News", text: $vm.query)
-                        .textInputAutocapitalization(.never)
-                        .disableAutocorrection(true)
-                        .onSubmit {
-                            Task { await vm.search(reset: true) }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .font(.body)
-                        .focused($isSearchFocused)
-                    
+                        .frame(width: 20, height: 20)
+                        .padding(.leading, 12)
+                        .padding(.trailing, 4)
+                }
+                .overlay(alignment: .trailing) {
                     if !vm.query.isEmpty {
                         Button {
                             vm.query = ""
@@ -35,20 +54,19 @@ struct SearchView: View {
                             Image(systemName: "xmark.circle.fill")
                                 .foregroundStyle(.secondary)
                                 .imageScale(.medium)
-                                .frame(width: 18, height: 18, alignment: .center)
+                                .frame(width: 20, height: 20)
+                                .padding(6)
+                                .background(.thinMaterial, in: Circle())
                         }
+                        .padding(.trailing, 10)
                         .buttonStyle(.plain)
                         .contentShape(Rectangle())
                     }
                 }
+                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .frame(minHeight: 36)
-                .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(.regularMaterial)
-                )
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .padding(.vertical, 4)
+                .listRowInsets(EdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 14))
                 .listRowBackground(Color.clear)
                 .listRowPlatterColor(.clear)
             }
